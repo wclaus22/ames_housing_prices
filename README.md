@@ -1,1 +1,1 @@
-# ames_housing_prices
+# KAGGLE Housing Prices Competition

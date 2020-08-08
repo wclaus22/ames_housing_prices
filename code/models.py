@@ -41,8 +41,7 @@ class RidgeRegression(CrossValTraining):
         self.m_model.fit(X, y)
 
     def predict(self, X):
-        self.m_model.predict(X)
-        return
+        return self.m_model.predict(X)
 
 
 

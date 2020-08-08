@@ -1,8 +1,7 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import KFold
 
 
 class PreProcessing:
@@ -12,11 +11,9 @@ class PreProcessing:
 
         # get config info
         path = config["path"]
-        seed = config["seed"]
-        n_folds = config["n_folds"]
 
         # get data
-        self.m_data = pd.read_csv(f"{path}/train.csv")
+        self.m_data = pd.read_csv(f"{path}/train.csv").drop(columns="Id")
         self.m_df_cat = self.m_data.select_dtypes(include="object").copy()
         self.m_df_scalar = self.m_data.select_dtypes(exclude="object").copy()
 
@@ -37,9 +34,6 @@ class PreProcessing:
 
         # finally get X data
         self.m_X = X_df
-
-        # define crossval kfold instance
-        self.m_kf = KFold(n_splits=n_folds, random_state=seed)
 
         print("Data successfully loaded.")
 

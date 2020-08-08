@@ -1,7 +1,8 @@
 import numpy as np
 
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
+from sklearn.model_selection import KFold
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
 
 from .data_processing import PreProcessing
 
@@ -11,23 +12,41 @@ class CrossValTraining(PreProcessing):
     def __init__(self, config):
         super().__init__(config)
 
+        self.m_seed = config["seed"]
+        self.m_n_folds = config["n_folds"]
         self.m_cv_metric = config["cv_metric"]
+
+        # define crossval kfold instance
+        self.m_kf = KFold(n_splits=self.m_n_folds, random_state=self.m_seed, shuffle=True)
+
         self.m_cv_scores = None
+        self.m_cv_predictions = None
+        self.m_cv_targets = None
 
     def cross_validate(self):
+        print(f"Commencing {self.m_n_folds}-fold cross-validation ...")
         self.m_cv_scores = []
+        self.m_cv_predictions = []
+        self.m_cv_targets = []
+
         for train_index, validation_index in self.m_kf.split(self.m_X):
-            X_train, X_val = self.m_X[train_index], self.m_X[validation_index]
-            y_train, y_val = self.m_y[train_index], self.m_y[validation_index]
+            X_train, X_val = self.m_X.loc[train_index], self.m_X.loc[validation_index]
+            y_train, y_val = self.m_y.loc[train_index], self.m_y.loc[validation_index]
 
             self.standardize(X_train, X_val)
 
-            self.train(X_train, y_train)
-            y_val_pred = self.predict(X_val)
+            self.train(X_train.values, y_train.values)
 
-            self.m_cv_scores.append(self.score(y_val, y_val_pred))
+            y_val_pred = self.predict(X_val.values)
+            score = self.score(y_val.values, y_val_pred)
 
-        print("Cross Validation Concluded. Avg CV score with given metric: \n ", np.mean(self.m_cv_scores))
+            self.m_cv_scores.append(score)
+            self.m_cv_predictions.append(y_val_pred)
+            self.m_cv_targets.append(y_val.values)
+
+        print("Cross Validation Concluded. Avg CV score: \n ", np.mean(self.m_cv_scores),
+              "std: ", np.std(self.m_cv_scores))
+        print(f"Margin of standard variation: {np.std(self.m_cv_scores)/np.mean(self.m_cv_scores)*100} %")
 
     def score(self, target, prediction):
         # classification tasks

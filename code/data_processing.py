@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
 
 
 class PreProcessing:
@@ -13,29 +13,50 @@ class PreProcessing:
         path = config["path"]
 
         # get data
-        self.m_data = pd.read_csv(f"{path}/train.csv").drop(columns="Id")
+        self.m_data = pd.read_csv(f"{path}/train.csv")
         self.m_df_cat = self.m_data.select_dtypes(include="object").copy()
-        self.m_df_scalar = self.m_data.select_dtypes(exclude="object").copy()
+        self.m_df_scalar = self.m_data.select_dtypes(exclude="object").copy().drop(columns=["Id", "SalePrice"])
 
         # get scalar column names
-        self.m_noncat_columns = self.m_df_scalar.drop(columns="SalePrice").columns
+        self.m_noncat_columns = self.m_df_scalar.columns
 
         # get y target data
         self.m_y = self.m_data["SalePrice"].copy()
 
+        # finally get X data
+        self.m_X = self.impute_and_encode(self.m_data)
+
+        self.encoder = None
+
+        print("Data successfully loaded.")
+
+    def impute_and_encode(self, dataframe, fit=True):
+
+        df_cat = dataframe.select_dtypes(include="object").copy()
+        if "SalePrice" in dataframe.columns:
+            df_scalar = dataframe.select_dtypes(exclude="object").copy().drop(columns=["Id", "SalePrice"])
+        else:
+            df_scalar = dataframe.select_dtypes(exclude="object").copy().drop(columns="Id")
+
+        if self.encoder is None:
+            self.encoder = OneHotEncoder()
+
         # encode categorical features and add to the scalar features
-        X_df = pd.concat([self.m_df_scalar, pd.get_dummies(self.m_df_cat)], axis=1)
+        if fit:
+            X_df = pd.concat([df_scalar, self.encoder.fit_transform(df_cat)], axis=1)
+        else:
+            X_df = pd.concat([df_scalar, self.encoder.transform(df_cat)], axis=1)
 
         # median imputation of NaN values in the scalar features
         bad_columns = X_df.columns[np.where(X_df.isnull().sum() != 0)[0]]
-        medians = self.m_data[bad_columns].median()
+        medians = dataframe[bad_columns].median()
         imputation_values = {column: imputation_val for column, imputation_val in zip(bad_columns, medians)}
         X_df.fillna(value=imputation_values, inplace=True)
 
-        # finally get X data
-        self.m_X = X_df
+        # choose outlier indices from the data exploration notebook
+        outlier_indices = [523, 1298, 185, 635]
 
-        print("Data successfully loaded.")
+        return X_df.drop(index=outlier_indices)
 
     def standardize(self, X_train, X_val):
         # define scaler

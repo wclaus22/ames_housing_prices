@@ -23,7 +23,7 @@ class CrossValTraining(PreProcessing):
         self.m_cv_predictions = None
         self.m_cv_targets = None
 
-    def cross_validate(self):
+    def cross_validate(self, **kwargs):
         print(f"Commencing {self.m_n_folds}-fold cross-validation ...")
         self.m_cv_scores = []
         self.m_cv_predictions = []
@@ -35,7 +35,7 @@ class CrossValTraining(PreProcessing):
 
             self.standardize(X_train, X_val)
 
-            self.train(X_train.values, y_train.values)
+            self.train(X_train.values, y_train.values, **kwargs)
 
             y_val_pred = self.predict(X_val.values)
             score = self.score(y_val.values, y_val_pred)
@@ -80,8 +80,8 @@ class CrossValTraining(PreProcessing):
 
         return score
 
-    def train(self, X, y):
+    def train(self, *args, **kwargs):
         raise NotImplementedError("'train' method has not yet been implemented!")
 
-    def predict(self, X):
+    def predict(self, *args, **kwargs):
         raise NotImplementedError("'predict' method has not yet been implemented!")

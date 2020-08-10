@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
 
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import OneHotEncoder
 
 
 class PreProcessing:
@@ -23,10 +24,11 @@ class PreProcessing:
         # get y target data
         self.m_y = self.m_data["SalePrice"].copy()
 
+        # define OneHotEncoder
+        self.m_encoder = OneHotEncoder(handle_unknown="ignore")
+
         # finally get X data
         self.m_X = self.impute_and_encode(self.m_data)
-
-        self.encoder = None
 
         print("Data successfully loaded.")
 
@@ -38,14 +40,11 @@ class PreProcessing:
         else:
             df_scalar = dataframe.select_dtypes(exclude="object").copy().drop(columns="Id")
 
-        if self.encoder is None:
-            self.encoder = OneHotEncoder()
-
         # encode categorical features and add to the scalar features
         if fit:
-            X_df = pd.concat([df_scalar, self.encoder.fit_transform(df_cat)], axis=1)
+            X_df = pd.concat([df_scalar, self.m_encoder.fit_transform(df_cat)], axis=1)
         else:
-            X_df = pd.concat([df_scalar, self.encoder.transform(df_cat)], axis=1)
+            X_df = pd.concat([df_scalar, self.m_encoder.transform(df_cat)], axis=1)
 
         # median imputation of NaN values in the scalar features
         bad_columns = X_df.columns[np.where(X_df.isnull().sum() != 0)[0]]

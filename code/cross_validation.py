@@ -30,6 +30,8 @@ class CrossValTraining(PreProcessing):
         self.m_cv_targets = []
 
         for train_index, validation_index in self.m_kf.split(self.m_X):
+            if self.outlier_indices is not None:
+                train_index = list(set(train_index) - set(self.outlier_indices))
             X_train, X_val = self.m_X.loc[train_index], self.m_X.loc[validation_index]
             y_train, y_val = self.m_y.loc[train_index], self.m_y.loc[validation_index]
 

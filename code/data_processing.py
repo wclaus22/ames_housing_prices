@@ -20,6 +20,7 @@ class PreProcessing:
 
         # get scalar column names
         self.m_noncat_columns = self.m_df_scalar.columns
+        self.final_columns = None
 
         # get y target data
         self.m_y = self.m_data["SalePrice"].copy()
@@ -30,9 +31,12 @@ class PreProcessing:
         # finally get X data
         self.m_X = self.impute_and_encode(self.m_data)
 
+        # choose outlier indices from the data exploration notebook
+        self.outlier_indices = [523, 1298, 185, 635]
+
         print("Data successfully loaded.")
 
-    def impute_and_encode(self, dataframe, fit=True):
+    def impute_and_encode(self, dataframe):
 
         df_cat = dataframe.select_dtypes(include="object").copy()
         if "SalePrice" in dataframe.columns:
@@ -41,10 +45,17 @@ class PreProcessing:
             df_scalar = dataframe.select_dtypes(exclude="object").copy().drop(columns="Id")
 
         # encode categorical features and add to the scalar features
-        if fit:
-            X_df = pd.concat([df_scalar, self.m_encoder.fit_transform(df_cat)], axis=1)
-        else:
-            X_df = pd.concat([df_scalar, self.m_encoder.transform(df_cat)], axis=1)
+        X_df = pd.concat([df_scalar, pd.get_dummies(df_cat)], axis=1)
+
+        if self.final_columns is None:
+            self.final_columns = X_df.columns
+
+        if len(X_df.columns) != len(self.final_columns):
+            diff_columns = list(set(self.final_columns) - set(X_df))
+
+            for column in diff_columns:
+                # zero imputation
+                X_df[column] = np.zeros(len(X_df))
 
         # median imputation of NaN values in the scalar features
         bad_columns = X_df.columns[np.where(X_df.isnull().sum() != 0)[0]]
@@ -52,10 +63,7 @@ class PreProcessing:
         imputation_values = {column: imputation_val for column, imputation_val in zip(bad_columns, medians)}
         X_df.fillna(value=imputation_values, inplace=True)
 
-        # choose outlier indices from the data exploration notebook
-        outlier_indices = [523, 1298, 185, 635]
-
-        return X_df.drop(index=outlier_indices)
+        return X_df
 
     def standardize(self, X_train, X_val):
         # define scaler

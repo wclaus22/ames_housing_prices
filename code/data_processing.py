@@ -31,9 +31,6 @@ class PreProcessing:
         # finally get X data
         self.m_X = self.impute_and_encode(self.m_data)
 
-        # choose outlier indices from the data exploration notebook
-        self.outlier_indices = [523, 1298, 185, 635]
-
         print("Data successfully loaded.")
 
     def impute_and_encode(self, dataframe):
